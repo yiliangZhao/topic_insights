@@ -1,184 +1,50 @@
-# Cloud Run Template Microservice
-
-A template repository for a Cloud Run microservice, written in Python
-
-[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
+# Cloud Run Microservice for Topic Insights
 
 ## Prerequisite
-
-* Enable the Cloud Run API via the [console](https://console.cloud.google.com/apis/library/run.googleapis.com?_ga=2.124941642.1555267850.1615248624-203055525.1615245957) or CLI:
-
-```bash
-gcloud services enable run.googleapis.com
+* Set the following environment variables:
 ```
-
-## Features
-
-* **Flask**: Web server framework
-* **Buildpack support** Tooling to build production-ready container images from source code and without a Dockerfile
-* **Dockerfile**: Container build instructions, if needed to replace buildpack for custom build
-* **SIGTERM handler**: Catch termination signal for cleanup before Cloud Run stops the container
-* **Service metadata**: Access service metadata, project ID and region, at runtime
-* **Local development utilities**: Auto-restart with changes and prettify logs
-* **Structured logging w/ Log Correlation** JSON formatted logger, parsable by Cloud Logging, with [automatic correlation of container logs to a request log](https://cloud.google.com/run/docs/logging#correlate-logs).
-* **Unit and System tests**: Basic unit and system tests setup for the microservice
-* **Task definition and execution**: Uses [invoke](http://www.pyinvoke.org/) to execute defined tasks in `tasks.py`.
-
-## Local Development
-
-### Cloud Code
-
-This template works with [Cloud Code](https://cloud.google.com/code), an IDE extension
-to let you rapidly iterate, debug, and run code on Kubernetes and Cloud Run.
-
-Learn how to use Cloud Code for:
-
-* Local development - [VSCode](https://cloud.google.com/code/docs/vscode/developing-a-cloud-run-service), [IntelliJ](https://cloud.google.com/code/docs/intellij/developing-a-cloud-run-service)
-
-* Local debugging - [VSCode](https://cloud.google.com/code/docs/vscode/debugging-a-cloud-run-service), [IntelliJ](https://cloud.google.com/code/docs/intellij/debugging-a-cloud-run-service)
-
-* Deploying a Cloud Run service - [VSCode](https://cloud.google.com/code/docs/vscode/deploying-a-cloud-run-service), [IntelliJ](https://cloud.google.com/code/docs/intellij/deploying-a-cloud-run-service)
-* Creating a new application from a custom template (`.template/templates.json` allows for use as an app template) - [VSCode](https://cloud.google.com/code/docs/vscode/create-app-from-custom-template), [IntelliJ](https://cloud.google.com/code/docs/intellij/create-app-from-custom-template)
-
-### CLI tooling
-
-To run the `invoke` commands below, install [`invoke`](https://www.pyinvoke.org/index.html) system wide: 
-
-```bash
-pip install invoke
+export PROJECT_ID=<>
+export HOST=<>
+export IMAGE_NAME=topicinsights
+export REGION=us-central1 
+export IMAGE_URL=gcr.io/${PROJECT_ID}/${IMAGE_NAME}:latest
+export SERVICE_NAME=topicinsights
 ```
-
-Invoke will handle establishing local virtual environments, etc. Task definitions can be found in `tasks.py`.
-
-#### Local development
-
-1. Set Project Id:
-    ```bash
-    export GOOGLE_CLOUD_PROJECT=<GCP_PROJECT_ID>
-    ```
-2. Start the server with hot reload:
-    ```bash
-    invoke dev
-    ```
-
-#### Deploying a Cloud Run service
-
-1. Set Project Id:
-    ```bash
-    export GOOGLE_CLOUD_PROJECT=<GCP_PROJECT_ID>
-    ```
-
-1. Enable the Artifact Registry API:
-    ```bash
-    gcloud services enable artifactregistry.googleapis.com
-    ```
-
-1. Create an Artifact Registry repo:
-    ```bash
-    export REPOSITORY="samples"
-    export REGION=us-central1
-    gcloud artifacts repositories create $REPOSITORY --location $REGION --repository-format "docker"
-    ```
+* [Optional] Run `python setup.py` to create the LDA models and the necessary python objects, which will be used by the web servers.
   
-1. Use the gcloud credential helper to authorize Docker to push to your Artifact Registry:
-    ```bash
-    gcloud auth configure-docker
-    ```
+## Unit testing
+Run `python -m unittest discover tests` 
 
-2. Build the container using a buildpack:
-    ```bash
-    invoke build
-    ```
-3. Deploy to Cloud Run:
-    ```bash
-    invoke deploy
-    ```
-
-### Run sample tests
-
-1. [Pass credentials via `GOOGLE_APPLICATION_CREDENTIALS` env var](https://cloud.google.com/docs/authentication/production#passing_variable):
-    ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="[PATH]"
-    ```
-
-2. Set Project Id:
-    ```bash
-    export GOOGLE_CLOUD_PROJECT=<GCP_PROJECT_ID>
-    ```
-3. Run unit tests
-    ```bash
-    invoke test
-    ```
-
-4. Run system tests
-    ```bash
-    gcloud builds submit \
-        --config test/advance.cloudbuild.yaml \
-        --substitutions 'COMMIT_SHA=manual,REPO_NAME=manual'
-    ```
-    The Cloud Build configuration file will build and deploy the containerized service
-    to Cloud Run, run tests managed by pytest, then clean up testing resources. This configuration restricts public
-    access to the test service. Therefore, service accounts need to have the permission to issue ID tokens for request authorization:
-    * Enable Cloud Run, Cloud Build, Artifact Registry, and IAM APIs:
-        ```bash
-        gcloud services enable run.googleapis.com cloudbuild.googleapis.com iamcredentials.googleapis.com artifactregistry.googleapis.com
-        ```
-        
-    * Set environment variables.
-        ```bash
-        export PROJECT_ID="$(gcloud config get-value project)"
-        export PROJECT_NUMBER="$(gcloud projects describe $(gcloud config get-value project) --format='value(projectNumber)')"
-        ```
-
-    * Create an Artifact Registry repo (or use another already created repo):
-        ```bash
-        export REPOSITORY="samples"
-        export REGION=us-central1
-        gcloud artifacts repositories create $REPOSITORY --location $REGION --repository-format "docker"
-        ```
+## Local Deployment
+* Run 
+```
+python3.9 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+* Update the `HOST` environment variable
+* Run `python test_web_services.py`
   
-    * Create service account `token-creator` with `Service Account Token Creator` and `Cloud Run Invoker` roles.
-        ```bash
-        gcloud iam service-accounts create token-creator
+## Cloud Delopyment
+* Run
+  ```
+  make build_image
+  make push_image
+  deploy.sh
+  ```
+* Note down the URL of the service after the deployment is done.
 
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:token-creator@$PROJECT_ID.iam.gserviceaccount.com" \
-            --role="roles/iam.serviceAccountTokenCreator"
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:token-creator@$PROJECT_ID.iam.gserviceaccount.com" \
-            --role="roles/run.invoker"
-        ```
-
-    * Add `Service Account Token Creator` role to the Cloud Build service account.
-        ```bash
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-            --role="roles/iam.serviceAccountTokenCreator"
-        ```
-    
-    * Cloud Build also requires permission to deploy Cloud Run services and administer artifacts: 
-
-        ```bash
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-            --role="roles/run.admin"
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-            --role="roles/iam.serviceAccountUser"
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-            --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-            --role="roles/artifactregistry.repoAdmin"
-        ```
-# API Documentation
-## Overview
+## API Documentation
+### Overview
 This API provides services related to topics. It supports the following queries:
 - Given any input sentence or paragraph, return the extracted themes from the text document.
 - Given a theme, return a list of relevant sentences or paragraphs under the same theme.
 - Given a theme, return statistics to show the change in theme popularity across time. 
 - Given a theme, return statistics to show the change in sentiment across time. 
 
-## Endpoints
-### GET /
+### Endpoints
+#### GET /
 Returns a status message.
 **Response**
 A JSON object containing a status message.
@@ -188,7 +54,7 @@ json
     "Status": "OK"
 }
 ```
-### GET /topics
+#### GET /topics
 Returns a JSON object of topics.
 **Response**
 A JSON object containing topics.
@@ -204,7 +70,7 @@ json
 }
 }
 ```
-### GET /topic_popularity/
+#### GET /topic_popularity/
 Returns the popularity of a specific topic.
 **Parameters**
 - topic_id: The ID of the topic.
@@ -224,7 +90,7 @@ popularity: {
 trend: -4.56311624
 }
 ```
-### GET /topic_sentiment/
+#### GET /topic_sentiment/
 Returns the sentiment of a specific topic.
 **Parameters**
 - topic_id: The ID of the topic.
@@ -256,7 +122,7 @@ positive sentiment: {
     }
 }
 ```
-### POST /predict_topic/
+#### POST /predict_topic/
 Predicts the topic of a given text.
 **Parameters**
 - text: The text to predict the topic of.
@@ -270,7 +136,7 @@ json
    '0.033*"risk" + 0.021*"capital" + 0.019*"financial" + 0.018*"management" + 0.015*"credit"': 0.2009, '0.042*"insurance" + 0.019*"loss" + 0.016*"business" + 0.015*"company" + 0.014*"reinsurance"': 0.2419}
 }
 ```
-### GET /get_documents/
+#### GET /get_documents/
 Returns documents related to a specific topic.
 **Parameters**
 - topic_id: The ID of the topic.
