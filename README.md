@@ -169,14 +169,55 @@ Invoke will handle establishing local virtual environments, etc. Task definition
             --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
             --role="roles/artifactregistry.repoAdmin"
         ```
+## API Documentation
+## Overview
+This API provides information about various topics, their popularity and sentiment.
 
-## Maintenance & Support
-
-This repo performs basic periodic testing for maintenance. Please use the issue tracker for bug reports, features requests and submitting pull requests.
-
-## Contributions
-
-Please see the [contributing guidelines](CONTRIBUTING.md)
+## Endpoints
+### GET /topics
+Returns a JSON object of topics.
+#### Request
+No parameters required.
+#### Response
+Returns a JSON object of topics.
+json
+{
+  "1": "Topic 1",
+  "2": "Topic 2",
+  "3": "Topic 3"
+}
+### GET /topic_popularity/
+Returns the popularity of a specific topic.
+#### Request
+Parameters:
+- topic_id (required): The ID of the topic.
+#### Response
+If the topic_id is not provided or is not found in the topics list, an error message will be returned.
+json
+{
+  "response": "Error: No topic_id field provided. Please specify a topic_id from [1, 2, 3]"
+}
+If the topic_id is valid, a JSON object with the popularity of the topic will be returned.
+json
+{
+  "popularity": 1234
+}
+### GET /topic_sentiment/
+Returns the sentiment of a specific topic.
+#### Request
+Parameters:
+- topic_id (required): The ID of the topic.
+#### Response
+If the topic_id is not provided or is not found in the topics list, an error message will be returned.
+json
+{
+  "response": "Error: No topic_id field provided. Please specify a topic_id from [1, 2, 3]"
+}
+If the topic_id is valid, a JSON object with the sentiment of the topic will be returned.
+json
+{
+  "sentiment": "Positive"
+}
 
 ## License
 

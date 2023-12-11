@@ -1,57 +1,109 @@
-# Copyright 2021 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import signal
-import sys
-from types import FrameType
-
-from flask import Flask
-
-from utils.logging import logger
+import os
+import numpy as np
+import pickle
+from flask import Flask, request, jsonify
+from gensim.corpora import Dictionary
+from gensim.models import LdaModel
+from utils import clean, DB, TABLE_NAME, MODEL_PATH, DICTIONARY_PATH, TOPICS_PATH, TOPIC_POPULARITY_PATH, TOPIC_SENTIMENT_PATH
+import sqlite3
 
 app = Flask(__name__)
 
+# Load the topics dictionary
+with open(TOPICS_PATH, 'rb') as f:
+    topics_dict = pickle.load(f)
 
-@app.route("/")
-def hello() -> str:
-    # Use basic logging with custom fields
-    logger.info(logField="custom-entry", arbitraryField="custom-entry")
+# Load the topic popularity dictionary
+with open(TOPIC_POPULARITY_PATH, 'rb') as f:
+    topic_popularity_dict = pickle.load(f)
 
-    # https://cloud.google.com/run/docs/logging#correlate-logs
-    logger.info("Child logger with trace Id.")
+# Load the topic sentiment dictionary
+with open(TOPIC_SENTIMENT_PATH, 'rb') as f:
+    topic_sentiment_dict = pickle.load(f)
 
-    return "Hello, World!"
+# Load the LDA model and the dictionary
+ldamodel = LdaModel.load(MODEL_PATH)
+dictionary = Dictionary.load(DICTIONARY_PATH)
 
 
-def shutdown_handler(signal_int: int, frame: FrameType) -> None:
-    logger.info(f"Caught Signal {signal.strsignal(signal_int)}")
+@app.route("/", methods=['GET'])
+def read_root() -> dict:
+    """Returns a status message."""
+    return {"Status": "OK"}
 
-    from utils.logging import flush
 
-    flush()
+@app.route("/topics", methods=['GET'])
+def return_topics() -> jsonify:
+    """Returns a JSON object of topics."""
+    return jsonify(topics_dict)
 
-    # Safely exit program
-    sys.exit(0)
+
+@app.route("/topic_popularity/", methods=['GET'])
+def return_popularity() -> jsonify:
+    """Returns the popularity of a specific topic."""
+    topic_id = request.args.get('topic_id')
+    if topic_id is None:
+        return {'response':f'Error: No topic_id field provided. Please specify a topic_id from {list(topics_dict.keys())}'}
+    topic_id = int(topic_id)
+    if topic_id not in topics_dict.keys():
+        return {'response':f'topic: {topic_id} is not found.\n Please pick a topic number from {list(topics_dict.keys())}'}
+    return jsonify(topic_popularity_dict[topic_id])
+
+
+@app.route("/topic_sentiment/", methods=['GET'])
+def return_sentiment() -> jsonify:
+    """Returns the sentiment of a specific topic."""
+    topic_id = request.args.get('topic_id')
+    if topic_id is None:
+        return {'response':f'Error: No topic_id field provided. Please specify a topic_id from {list(topics_dict.keys())}'}
+    topic_id = int(topic_id)
+    if topic_id not in topics_dict.keys():
+        return {'response':f'topic: {topic_id} is not found.\n Please pick a topic number from {list(topics_dict.keys())}'}
+    return jsonify(topic_sentiment_dict[topic_id])
+
+
+@app.route("/predict_topic/", methods=['POST'])
+def predict_topic() -> jsonify:
+    """Predicts the topic of a given text."""
+    sentence = request.json['text']
+    processed_sentence = clean(sentence)
+    new_corpus = dictionary.doc2bow(processed_sentence.split())
+    topics = ldamodel.get_document_topics(new_corpus)
+
+    response = {}
+    for topic in topics:
+        response[topics_dict[topic[0]]] = round(float(topic[1]), 4)
+    
+    return jsonify(dict(sorted(response.items(), key=lambda item: item[1], reverse=True)))
+
+
+@app.route("/get_documents/", methods=['GET'])
+def get_documents() -> jsonify:
+    """Returns documents related to a specific topic."""
+    topic_id = request.args.get('topic_id')
+    if topic_id is None:
+        return {'response':f'Error: No topic_id field provided. Please specify a topic_id from {list(topics_dict.keys())}'}
+    topic_id = int(topic_id)
+    if topic_id not in topics_dict.keys():
+        return {'response':f'topic: {topic_id} is not found.\n Please pick a topic number from {list(topics_dict.keys())}'}
+    confidence_score = request.args.get('threshold')
+    if confidence_score is None:
+        return {'response':'Error: No threshold field provided. Please specify a threshold between 0 and 1.'}
+    confidence_score = float(confidence_score)
+    conn = sqlite3.connect(DB)
+    query = f'''SELECT companyName, filedAt, section, topic{topic_id} 
+              FROM {TABLE_NAME} 
+              WHERE topic{topic_id} >= {confidence_score}'''
+    response = conn.execute(query)
+    docs = []
+    for item in response:    
+        obj = {'name':item[0], 'filedAt':item[1], 'section':item[2], 'score':float(item[3])}
+        docs.append(obj)
+    conn.close()
+    result = {'topic':topics_dict[topic_id], 'documents':docs}
+    return jsonify(result)
 
 
 if __name__ == "__main__":
-    # Running application locally, outside of a Google Cloud Environment
-
-    # handles Ctrl-C termination
-    signal.signal(signal.SIGINT, shutdown_handler)
-
-    app.run(host="localhost", port=8080, debug=True)
-else:
-    # handles Cloud Run container termination
-    signal.signal(signal.SIGTERM, shutdown_handler)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5002)))
+    
