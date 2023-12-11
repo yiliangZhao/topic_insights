@@ -1,8 +1,9 @@
 # Cloud Run Microservice for Topic Insights
+This repository contains a Cloud Run microservice that provides insights on various topics.
 
 ## Prerequisite
-* Set the following environment variables:
-```
+- Set the following environment variables:
+```bash
 export PROJECT_ID=<>
 export HOST=<>
 export IMAGE_NAME=topicinsights
@@ -10,46 +11,55 @@ export REGION=us-central1
 export IMAGE_URL=gcr.io/${PROJECT_ID}/${IMAGE_NAME}:latest
 export SERVICE_NAME=topicinsights
 ```
-* [Optional] Run `python setup.py` to create the LDA models and the necessary python objects, which will be used by the web servers.
+- [Optional] Run `python setup.py` to create the LDA models and the necessary python objects, which will be used by the web servers.
   
 ## Unit testing
-Run `python -m unittest discover tests` 
+To run unit tests, execute the following command:
+```bash
+python -m unittest discover tests
+```
 
 ## Local Deployment
-* Run 
-```
+To deploy the application locally, follow these steps:
+1. Create a virtual environment and activate it:
+```bash
 python3.9 -m venv env
 source env/bin/activate
+```
+2. Install the required packages:
+```bash
 pip install -r requirements.txt
+```
+3. Run the application:
+```bash
 python app.py
 ```
-* Update the `HOST` environment variable
-* Run `python test_web_services.py`
+4. Update the `HOST` environment variable.
+5. Run `python test_web_services.py` to test the web services.
   
 ## Cloud Deployment
-* Run
-  ```
-  make build_image
-  make push_image
-  deploy.sh
-  ```
-* Note down the URL of the service after the deployment is done.
+To deploy the application to the cloud, run the deploy.sh script. Note down the URL of the service after the deployment is done.
+```bash
+make build_image
+make push_image
+./deploy.sh
+```
+Note down the URL of the service after the deployment is done.
 
 ## API Documentation
 ### Overview
-This API provides services related to topics. It supports the following queries:
-- Given any input sentence or paragraph, return the extracted themes from the text document.
-- Given a theme, return a list of relevant sentences or paragraphs under the same theme.
-- Given a theme, return statistics to show the change in theme popularity across time. 
-- Given a theme, return statistics to show the change in sentiment across time. 
+This API provides services related to topics. It supports the following operations:
+- Extract themes from a given input sentence or paragraph.
+- Return a list of relevant sentences or paragraphs under a given theme.
+- Show the change in popularity of a given theme over time.
+- Show the change in sentiment of a given theme over time.
 
 ### Endpoints
 #### GET /
 Returns a status message.
 **Response**
 A JSON object containing a status message.
-```
-json
+```bash
 {
     "Status": "OK"
 }
@@ -58,8 +68,8 @@ json
 Returns a JSON object of topics.
 **Response**
 A JSON object containing topics.
-json
-```
+
+```bash
 {
     {
     0: "0.014*"operating" + 0.013*"property" + 0.012*"real" + 0.012*"debt" + 0.011*"estate"",
@@ -76,8 +86,8 @@ Returns the popularity of a specific topic.
 - topic_id: The ID of the topic.
 **Response**
 A JSON object containing the popularity of a specific topic. The name of the topic is a mixture of word tokens with related weights. Popularity contains the score for each year and trend is the slope of the linear regression fit. 
-json
-```
+
+```bash
 {
 name: "0.016*"revenue" + 0.013*"development" + 0.013*"customer" + 0.011*"technology" + 0.011*"data"",
 popularity: {
@@ -96,8 +106,8 @@ Returns the sentiment of a specific topic.
 - topic_id: The ID of the topic.
 **Response**
 A JSON object containing the sentiment of a specific topic. The name of the topic is a mixture of word tokens with related weights. Positive/negative sentiment contains the sentiment scores for each year and the trend is the slope of the linear regression fit.
-json
-```
+
+```bash
 {
 name: "0.016*"revenue" + 0.013*"development" + 0.013*"customer" + 0.011*"technology" + 0.011*"data"",
 negative sentiment: {
@@ -128,8 +138,8 @@ Predicts the topic of a given text.
 - text: The text to predict the topic of.
 **Response**
 A JSON object containing the predicted topic of the given text. The key is the name of the topic, which is a mixture of word tokens with related weights and the value is the proportion of that topic.
-json
-```
+
+```bash
 {
    {'0.014*"company" + 0.012*"business" + 0.008*"president" + 0.008*"global" + 0.007*"information"': 0.3679, '0.016*"revenue" + 0.013*"development" + 0.013*"customer" + 0.011*"technology" + 0.011*"data"': 0.0691, 
    '0.020*"content" + 0.016*"business" + 0.015*"data" + 0.012*"service" + 0.011*"advertising"': 0.0615, '0.024*"business" + 0.018*"financial" + 0.013*"adversely" + 0.012*"result" + 0.011*"affect"': 0.0509, 
@@ -143,8 +153,8 @@ Returns documents related to a specific topic.
 - threshold: The threshold for the confidence score.
 **Response**
 A JSON object containing documents related to a specific topic. Each entry in the list contains the name of the company, filing date and filing document with the strength of the topic requested. It also contains the name of the topic in the form of a mixture of word tokens.
-json
-```
+
+```bash
 {
     documents: [
         {
