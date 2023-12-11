@@ -10,3 +10,4 @@ scipy==1.11.4
 wordcloud==1.9.2
 gunicorn==21.2.0
 textblob==0.17.1
+requests==2.31.0

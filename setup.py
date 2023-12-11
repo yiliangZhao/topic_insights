@@ -176,13 +176,12 @@ def get_topic_trend(df: pd.DataFrame) -> pd.DataFrame:
     return new_df
 
 
-def save_topic_trend(df: pd.DataFrame) -> None:
+def save_topic_trend(df: pd.DataFrame, topic_dict: dict, file: str) -> None:
     """
     This function takes a DataFrame with topics as columns and years as rows, computes the popularity and trend 
     for each topic, and saves the results in a pickle file. The popularity is the sum of proportions for each 
     topic in a given year, and the trend is computed using the 'compute_metrics' function (not defined in this 
-    code snippet). The topic names are retrieved from the 'topic_dict' dictionary (not defined in this code 
-    snippet).
+    code snippet). 
     
     The output is a dictionary where each key is a topic and the value is another dictionary with the following 
     keys:
@@ -196,7 +195,8 @@ def save_topic_trend(df: pd.DataFrame) -> None:
     
     Parameters:
     df (pd.DataFrame): A DataFrame with topics as columns and years as rows.
-    
+    topic_dict (dict): A dictionary where each key is a topic id and the value is the name of the topic.
+
     Returns:
     None
     """
@@ -212,7 +212,7 @@ def save_topic_trend(df: pd.DataFrame) -> None:
         topic_popularity[col] = value_obj
 
     # Save dictionary to a pickle file
-    with open(TOPIC_POPULARITY_PATH, 'wb') as f:
+    with open(file, 'wb') as f:
         pickle.dump(topic_popularity, f)
 
 
@@ -293,7 +293,7 @@ def get_sentiment_trend(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return normalized_df_pos, normalized_df_neg
 
 
-def save_sentiment_trend(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> None:
+def save_sentiment_trend(df_pos: pd.DataFrame, df_neg: pd.DataFrame, topic_dict: dict, file: str) -> None:
     """
     This function saves the sentiment trend for different topics into a pickle file. 
     It takes two DataFrames as input where each DataFrame represents the positive and negative sentiment trend for each topic over the years.
@@ -301,6 +301,7 @@ def save_sentiment_trend(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> None:
     Args:
         df_pos (pd.DataFrame): The DataFrame containing the positive sentiment trend for each topic over the years.
         df_neg (pd.DataFrame): The DataFrame containing the negative sentiment trend for each topic over the years.
+        topic_dict (dict): A dictionary where each key is a topic id and the value is the name of the topic.
 
     Returns:
         None
@@ -325,7 +326,7 @@ def save_sentiment_trend(df_pos: pd.DataFrame, df_neg: pd.DataFrame) -> None:
         topic_sentiment[col] = value_obj
 
     # Save dictionary to a pickle file
-    with open(TOPIC_SENTIMENT_PATH, 'wb') as f:
+    with open(file, 'wb') as f:
         pickle.dump(topic_sentiment, f)
 
 
@@ -432,7 +433,7 @@ if __name__ == '__main__':
     # Obtain the topic proportions for each year
     # new_df has years and topics as columns
     new_df = get_topic_trend(df)
-    save_topic_trend(new_df)
+    save_topic_trend(new_df, topic_dict, TOPIC_POPULARITY_PATH)
 
     # Obtain the sentiment for each document
     for item in ['1', '1A', '7']:
@@ -442,7 +443,7 @@ if __name__ == '__main__':
     normalized_df_pos, normalized_df_neg = get_sentiment_trend(df)
 
     # Save the sentiment trend for each topic
-    save_sentiment_trend(normalized_df_pos, normalized_df_neg)
+    save_sentiment_trend(normalized_df_pos, normalized_df_neg, topic_dict, TOPIC_SENTIMENT_PATH)
 
     # Create a new DataFrame with 'companyName', 'filedAt', 'section', and 'topic' + str(i) columns
     df_topic_doc = topic_to_doc_mapping(df)

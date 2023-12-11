@@ -1,7 +1,8 @@
 import unittest
 import json
+import pandas as pd
 from flask import Flask, jsonify
-from app import app  # replace 'your_flask_app' with the name of your flask app
+from app import app  
 
 class FlaskTest(unittest.TestCase):
 
@@ -44,6 +45,7 @@ class FlaskTest(unittest.TestCase):
         data = json.loads(response.get_data())
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(data, dict)  # assuming the response is a dictionary
+
 
 if __name__ == "__main__":
     unittest.main()

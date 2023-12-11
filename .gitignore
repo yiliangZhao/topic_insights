@@ -12,5 +12,5 @@ __pycache__/
 
 # macOS
 **/.DS_Store
-
+env.prod.local
 data/*csv
