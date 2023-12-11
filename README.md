@@ -40,6 +40,7 @@ python app.py
 ## Cloud Deployment
 To deploy the application to the cloud, run the deploy.sh script. Note down the URL of the service after the deployment is done.
 ```bash
+source env.prod
 make build_image
 make push_image
 ./deploy.sh
