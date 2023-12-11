@@ -26,7 +26,7 @@ python app.py
 * Update the `HOST` environment variable
 * Run `python test_web_services.py`
   
-## Cloud Delopyment
+## Cloud Deployment
 * Run
   ```
   make build_image
