@@ -169,54 +169,68 @@ Invoke will handle establishing local virtual environments, etc. Task definition
             --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
             --role="roles/artifactregistry.repoAdmin"
         ```
-## API Documentation
+# API Documentation
 ## Overview
-This API provides information about various topics, their popularity and sentiment.
-
+This API provides services related to topics. It allows you to get a status message, return a JSON object of topics, return the popularity of a specific topic, return the sentiment of a specific topic, predict the topic of a given text, and return documents related to a specific topic.
 ## Endpoints
-### GET /topics
-Returns a JSON object of topics.
-#### Request
-No parameters required.
-#### Response
-Returns a JSON object of topics.
+### GET /
+Returns a status message.
+**Response**
+A JSON object containing a status message.
+```
 json
 {
-  "1": "Topic 1",
-  "2": "Topic 2",
-  "3": "Topic 3"
+    "Status": "OK"
+}
+```
+### GET /topics
+Returns a JSON object of topics.
+**Response**
+A JSON object containing topics.
+json
+{
+    "topics": "topics_dict"
 }
 ### GET /topic_popularity/
 Returns the popularity of a specific topic.
-#### Request
-Parameters:
-- topic_id (required): The ID of the topic.
-#### Response
-If the topic_id is not provided or is not found in the topics list, an error message will be returned.
+**Parameters**
+- topic_id: The ID of the topic.
+**Response**
+A JSON object containing the popularity of a specific topic.
 json
 {
-  "response": "Error: No topic_id field provided. Please specify a topic_id from [1, 2, 3]"
-}
-If the topic_id is valid, a JSON object with the popularity of the topic will be returned.
-json
-{
-  "popularity": 1234
+    "popularity": "topic_popularity_dict[topic_id]"
 }
 ### GET /topic_sentiment/
 Returns the sentiment of a specific topic.
-#### Request
-Parameters:
-- topic_id (required): The ID of the topic.
-#### Response
-If the topic_id is not provided or is not found in the topics list, an error message will be returned.
+**Parameters**
+- topic_id: The ID of the topic.
+**Response**
+A JSON object containing the sentiment of a specific topic.
 json
 {
-  "response": "Error: No topic_id field provided. Please specify a topic_id from [1, 2, 3]"
+    "sentiment": "topic_sentiment_dict[topic_id]"
 }
-If the topic_id is valid, a JSON object with the sentiment of the topic will be returned.
+### POST /predict_topic/
+Predicts the topic of a given text.
+**Parameters**
+- text: The text to predict the topic of.
+**Response**
+A JSON object containing the predicted topic of the given text.
 json
 {
-  "sentiment": "Positive"
+    "predicted_topic": "response"
+}
+### GET /get_documents/
+Returns documents related to a specific topic.
+**Parameters**
+- topic_id: The ID of the topic.
+- threshold: The threshold for the confidence score.
+**Response**
+A JSON object containing documents related to a specific topic.
+json
+{
+    "documents": "result"
 }
 
 ## License
